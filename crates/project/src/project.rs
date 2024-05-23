@@ -36,7 +36,7 @@ use git::{blame::Blame, repository::GitRepository};
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use gpui::{
     AnyModel, AppContext, AsyncAppContext, BackgroundExecutor, BorrowAppContext, Context, Entity,
-    EventEmitter, Model, ModelContext, PromptLevel, Task, WeakModel,
+    EventEmitter, Model, ModelContext, PromptLevel, Task, WeakModel, WindowContext,
 };
 use itertools::Itertools;
 use language::{
@@ -401,7 +401,7 @@ pub struct InlayHint {
 }
 
 /// A completion provided by a language server
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Completion {
     /// The range of the buffer that will be replaced.
     pub old_range: Range<Anchor>,
@@ -415,6 +415,21 @@ pub struct Completion {
     pub documentation: Option<Documentation>,
     /// The raw completion provided by the language server.
     pub lsp_completion: lsp::CompletionItem,
+    /// An optional callback to invoke when this completion is confirmed.
+    pub confirm: Option<Arc<dyn Send + Sync + Fn(&mut WindowContext)>>,
+}
+
+impl std::fmt::Debug for Completion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Completion")
+            .field("old_range", &self.old_range)
+            .field("new_text", &self.new_text)
+            .field("label", &self.label)
+            .field("server_id", &self.server_id)
+            .field("documentation", &self.documentation)
+            .field("lsp_completion", &self.lsp_completion)
+            .finish()
+    }
 }
 
 /// A completion provided by a language server
@@ -9108,6 +9123,7 @@ impl Project {
                         runs: Default::default(),
                         filter_range: Default::default(),
                     },
+                    confirm: None,
                 },
                 false,
                 cx,
@@ -10446,6 +10462,7 @@ async fn populate_labels_for_completions(
             server_id: completion.server_id,
             documentation,
             lsp_completion,
+            confirm: None,
         })
     }
 }
