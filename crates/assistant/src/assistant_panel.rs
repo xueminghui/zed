@@ -1706,7 +1706,7 @@ impl Conversation {
         if *event == language::Event::Edited {
             self.count_remaining_tokens(cx);
             self.reparse_edit_suggestions(cx);
-            self.reparse_slash_command_calls(cx);
+            // self.reparse_slash_command_calls(cx);
             cx.emit(ConversationEvent::MessagesEdited);
         }
     }
